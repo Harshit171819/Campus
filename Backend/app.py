@@ -22,6 +22,24 @@ if not supabase_url or not supabase_key:
 supabase: Client = create_client(supabase_url, supabase_key)
 
 
+@app.before_request
+def handle_api_preflight():
+    if request.method == "OPTIONS" and request.path.startswith("/api/"):
+        return "", 204
+    return None
+
+
+@app.after_request
+def add_local_frontend_cors(response: Response) -> Response:
+    origin = request.headers.get("Origin")
+    if origin in {"http://localhost:5500", "http://127.0.0.1:5500"}:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        response.headers["Vary"] = "Origin"
+    return response
+
+
 def authenticated_client() -> tuple[Client | None, str | None, tuple[Response, int] | None]:
     authorization = request.headers.get("Authorization", "")
     scheme, _, token = authorization.partition(" ")
@@ -52,7 +70,13 @@ def authenticated_client() -> tuple[Client | None, str | None, tuple[Response, i
 
 
 def database_error(error: APIError) -> tuple[Response, int]:
-    app.logger.error("Supabase database request failed: %s", error)
+    app.logger.error(
+        "Supabase database request failed (code=%s, message=%s, details=%s, hint=%s)",
+        getattr(error, "code", None),
+        getattr(error, "message", str(error)),
+        getattr(error, "details", None),
+        getattr(error, "hint", None),
+    )
     return jsonify(error="Database request failed"), 500
 
 
@@ -78,7 +102,7 @@ def list_events():
         response = (
             supabase.table("events")
             .select("*")
-            .order("starts_at")
+            .order("id")
             .range(offset, offset + limit - 1)
             .execute()
         )
@@ -155,10 +179,10 @@ def list_event_registrations(event_id: str):
         return auth_error
 
     try:
-        event = client.table("events").select("organizer_id").eq("id", event_id).execute()
+        event = client.table("events").select("organiser_id").eq("id", event_id).execute()
         if not event.data:
             return jsonify(error="Event not found"), 404
-        if event.data[0]["organizer_id"] != user_id:
+        if event.data[0]["organiser_id"] != user_id:
             return jsonify(error="Only the event organizer can view registrations"), 403
 
         response = (

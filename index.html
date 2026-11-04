@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="refresh" content="0; url=Frontend/index.html">
+  <title>CampusConnect</title>
+</head>
+<body>
+  <p>Opening CampusConnect…</p>
+  <script>
+    const destination = new URL('Frontend/index.html', window.location.href);
+    destination.search = window.location.search;
+    destination.hash = window.location.hash;
+    window.location.replace(destination.href);
+  </script>
+</body>
+</html>

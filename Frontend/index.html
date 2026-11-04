@@ -5,9 +5,9 @@
   <meta name="theme-color" content="#f9f9ff"><title>CampusConnect · Find your next campus event</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <link rel="stylesheet" href="static/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script defer src="{{ url_for('static', filename='app.js') }}"></script>
+  <script defer src="static/app.js"></script>
 </head>
 <body>
   <header class="topbar"><a class="brand" href="#explore" aria-label="CampusConnect home"><span class="brand-mark">✳</span><span>Campus<span class="brand-accent">Connect</span></span></a>
@@ -30,7 +30,7 @@
   <footer><div class="wrap footer-inner"><a class="brand" href="#explore"><span class="brand-mark">✳</span><span>Campus<span class="brand-accent">Connect</span></span></a><span>Made for the moments that bring us together.</span><a href="#explore">Back to top ↑</a></div></footer>
 
   <dialog id="event-dialog" class="modal event-modal"><button class="modal-close" data-close aria-label="Close">×</button><div id="event-detail"></div></dialog>
-  <dialog id="auth-dialog" class="modal auth-modal"><button class="modal-close" data-close aria-label="Close">×</button><div class="auth-mark">✳</div><span class="eyebrow muted">WELCOME TO CAMPUSCONNECT</span><h2 id="auth-title">Good to see you.</h2><p id="auth-copy">Sign in to save your spot at the events you love.</p><form id="auth-form"><label>Email address<input id="auth-email" type="email" autocomplete="email" placeholder="you@campus.edu" required></label><label>Password<input id="auth-password" type="password" autocomplete="current-password" placeholder="At least 6 characters" required minlength="6"></label><p id="auth-error" class="form-error" role="alert"></p><button class="button button-primary full-width" id="auth-submit">Sign in</button></form><p class="auth-switch"><span id="auth-switch-text">New to CampusConnect?</span> <button id="auth-switch" class="text-button">Create an account</button></p></dialog>
+  <dialog id="auth-dialog" class="modal auth-modal"><button class="modal-close" data-close aria-label="Close">×</button><div class="auth-mark">✳</div><span class="eyebrow muted">WELCOME TO CAMPUSCONNECT</span><h2 id="auth-title">Good to see you.</h2><p id="auth-copy">Sign in to save your spot at the events you love.</p><form id="auth-form"><label>Email address<input id="auth-email" type="email" autocomplete="email" placeholder="you@campus.edu" required></label><label>Password<input id="auth-password" type="password" autocomplete="current-password" placeholder="At least 6 characters" required minlength="6"></label><p id="auth-error" class="form-error" role="alert"></p><button class="button button-primary full-width" id="auth-submit">Sign in</button><button type="button" id="resend-confirmation" class="text-button hidden resend-link">Resend confirmation email</button></form><p class="auth-switch"><span id="auth-switch-text">New to CampusConnect?</span> <button id="auth-switch" class="text-button">Create an account</button></p></dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 </body>
 </html>

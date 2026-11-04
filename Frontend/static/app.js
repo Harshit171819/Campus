@@ -1,6 +1,7 @@
 (() => {
   const $ = (selector, root = document) => root.querySelector(selector);
-  const state = { events: [], registrations: [], category: 'all', query: '', page: 'explore', selectedEvent: null, authMode: 'signin', supabase: null, session: null };
+  const state = { events: [], registrations: [], category: 'all', query: '', page: 'explore', selectedEvent: null, authMode: 'signin', supabase: null, session: null, pendingEmail: '' };
+  const API_BASE = window.CAMPUSCONNECT_API_BASE || (location.port === '5500' ? `${location.protocol}//${location.hostname}:5000` : '');
   const colors = ['violet', 'mint', 'peach', 'blue'];
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
   const first = (obj, keys, fallback = '') => { for (const key of keys) if (obj?.[key] !== undefined && obj[key] !== null && obj[key] !== '') return obj[key]; return fallback; };
@@ -16,9 +17,15 @@
   const imageMarkup = (event, extra = '') => imageOf(event) ? `<img class="${extra}" src="${escapeHtml(imageOf(event))}" alt="${escapeHtml(titleOf(event))}" loading="lazy">` : `<div class="cover-placeholder ${extra}" aria-hidden="true">${escapeHtml((titleOf(event).match(/[A-Z]/g) || ['✳']).slice(0, 2).join(''))}</div>`;
   const toast = (message) => { const el = $('#toast'); el.textContent = message; el.classList.add('show'); clearTimeout(toast.timer); toast.timer = setTimeout(() => el.classList.remove('show'), 2800); };
   const token = () => state.session?.access_token || '';
+  const authRedirectUrl = () => `${window.location.origin}${window.location.pathname}`;
+  function showResendConfirmation(email = '') {
+    state.pendingEmail = email || state.pendingEmail || sessionStorage.getItem('campusconnect_pending_email') || '';
+    $('#resend-confirmation').classList.remove('hidden');
+    if (state.pendingEmail) $('#auth-email').value = state.pendingEmail;
+  }
   async function api(path, options = {}) {
     const headers = { ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...(token() ? { Authorization: `Bearer ${token()}` } : {}), ...(options.headers || {}) };
-    const response = await fetch(path, { ...options, headers });
+    const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
     const body = await response.json().catch(() => ({}));
     if (!response.ok) { const error = new Error(body.error || `Request failed (${response.status})`); error.status = response.status; throw error; }
     return body;
@@ -52,7 +59,7 @@
   async function loadEvents() {
     $('#events-grid').innerHTML = '<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
     try { state.events = await api('/api/events?limit=100'); renderEvents(); }
-    catch (error) { $('#events-grid').innerHTML = `<div class="empty-registrations"><h3>We couldn’t load events</h3><p>${escapeHtml(error.message)}. Check that the backend is running and your events table has data.</p><button class="button button-outline" id="retry-events">Try again</button></div>`; $('#event-count').textContent = ''; $('#retry-events')?.addEventListener('click', loadEvents); }
+    catch (error) { $('#events-grid').innerHTML = `<div class="empty-registrations"><h3>We couldn’t load events</h3><p>${escapeHtml(error.message)}. Check the backend terminal and verify that public.events is available to the Supabase Data API.</p><button class="button button-outline" id="retry-events">Try again</button></div>`; $('#event-count').textContent = ''; $('#retry-events')?.addEventListener('click', loadEvents); }
   }
   function showEvent(event) {
     if (!event) return; state.selectedEvent = event; const price = first(event, ['price', 'cost', 'ticket_price']);
@@ -109,12 +116,53 @@
     event.preventDefault(); const email = $('#auth-email').value.trim(); const password = $('#auth-password').value; const button = $('#auth-submit'); button.disabled = true; $('#auth-error').textContent = '';
     try {
       if (!state.supabase) throw new Error('Sign-in is unavailable. Check the Supabase client configuration.');
-      const result = state.authMode === 'signin' ? await state.supabase.auth.signInWithPassword({ email, password }) : await state.supabase.auth.signUp({ email, password });
+      const result = state.authMode === 'signin'
+        ? await state.supabase.auth.signInWithPassword({ email, password })
+        : await state.supabase.auth.signUp({ email, password, options: { emailRedirectTo: authRedirectUrl() } });
       if (result.error) throw result.error;
       state.session = result.data.session; updateAccount(); $('#auth-dialog').close(); $('#auth-form').reset();
-      if (state.authMode === 'signup' && !state.session) toast('Check your email to confirm your account.'); else toast(state.authMode === 'signin' ? 'Welcome back!' : 'Your account is ready.');
+      if (state.authMode === 'signup' && !state.session) {
+        state.pendingEmail = email;
+        sessionStorage.setItem('campusconnect_pending_email', email);
+        showResendConfirmation(email);
+        toast('Check your email to confirm your account.');
+      } else {
+        sessionStorage.removeItem('campusconnect_pending_email');
+        state.pendingEmail = '';
+        toast(state.authMode === 'signin' ? 'Welcome back!' : 'Your account is ready.');
+      }
       if (state.page === 'registrations') loadRegistrations(); if ($('#event-dialog').open && state.session) showEvent(state.selectedEvent);
-    } catch (error) { $('#auth-error').textContent = error.message || 'Could not sign in.'; } finally { button.disabled = false; }
+    } catch (error) {
+      $('#auth-error').textContent = error.message || 'Could not sign in.';
+      if (state.authMode === 'signin' && /confirm/i.test(error.message || '')) showResendConfirmation(email);
+    } finally { button.disabled = false; }
+  }
+  async function resendConfirmation() {
+    const email = $('#auth-email').value.trim() || state.pendingEmail;
+    if (!email || !state.supabase) { $('#auth-error').textContent = 'Enter your email address first.'; return; }
+    const button = $('#resend-confirmation'); button.disabled = true; $('#auth-error').textContent = '';
+    try {
+      const { error } = await state.supabase.auth.resend({ type: 'signup', email, options: { emailRedirectTo: authRedirectUrl() } });
+      if (error) throw error;
+      state.pendingEmail = email;
+      sessionStorage.setItem('campusconnect_pending_email', email);
+      $('#auth-error').textContent = 'A fresh confirmation link has been sent. Use the newest email link once.';
+    } catch (error) { $('#auth-error').textContent = error.message || 'Could not resend the confirmation email.'; }
+    finally { button.disabled = false; }
+  }
+  function handleAuthRedirectError() {
+    const params = new URLSearchParams(window.location.hash.slice(1));
+    const code = params.get('error_code');
+    if (!code) return;
+    const description = params.get('error_description') || 'Your email confirmation link is no longer valid.';
+    history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+    if (code === 'otp_expired') {
+      state.pendingEmail = sessionStorage.getItem('campusconnect_pending_email') || '';
+      openAuth('signin');
+      showResendConfirmation(state.pendingEmail);
+      $('#auth-error').textContent = 'That link expired or was already used. Resend a fresh confirmation email below.';
+    }
+    toast(description);
   }
   function bind() {
     document.querySelectorAll('.nav-link').forEach((link) => link.addEventListener('click', () => setTimeout(syncPage, 0)));
@@ -124,7 +172,8 @@
     document.body.addEventListener('click', (event) => { if (event.target.closest('[data-close]')) event.target.closest('dialog')?.close(); });
     $('#auth-button').addEventListener('click', async () => { if (state.session) { await state.supabase?.auth.signOut(); state.session = null; updateAccount(); toast('You’ve signed out.'); if (state.page === 'registrations') loadRegistrations(); } else openAuth(); });
     $('#auth-form').addEventListener('submit', submitAuth); $('#auth-switch').addEventListener('click', () => openAuth(state.authMode === 'signin' ? 'signup' : 'signin'));
+    $('#resend-confirmation').addEventListener('click', resendConfirmation);
     document.addEventListener('keydown', (event) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); $('#search-input').focus(); } });
   }
-  bind(); initAuth(); loadEvents(); syncPage();
+  bind(); handleAuthRedirectError(); initAuth(); loadEvents(); syncPage();
 })();
