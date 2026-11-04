@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f9f9ff"><title>CampusConnect · Find your next campus event</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="{{ url_for('static', filename='app.js') }}"></script>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="#explore" aria-label="CampusConnect home"><span class="brand-mark">✳</span><span>Campus<span class="brand-accent">Connect</span></span></a>
+    <nav class="nav"><a href="#explore" data-page="explore" class="nav-link active">Explore events</a><a href="#registrations" data-page="registrations" class="nav-link">My registrations</a></nav>
+    <div class="account"><span id="account-label" class="account-label">Guest</span><button id="auth-button" class="button button-outline button-small">Sign in</button></div>
+  </header>
+  <main>
+    <section id="explore-page" class="page">
+      <div class="hero wrap"><div class="hero-copy"><span class="eyebrow"><span class="live-dot"></span> YOUR CAMPUS, YOUR COMMUNITY</span><h1>Make room for<br><span>something great.</span></h1><p>Discover the ideas, people, and experiences bringing campus to life.</p>
+        <a href="#event-list" class="button button-primary">Explore events <span aria-hidden="true">↓</span></a></div>
+        <div class="hero-art" aria-label="Illustration of a lively campus gathering"><div class="sun"></div><div class="art-orbit orbit-one"></div><div class="art-orbit orbit-two"></div><div class="art-card"><span class="art-icon">✦</span><strong>Find your<br>people.</strong><small>Good things happen here.</small></div><div class="art-spark spark-one">✳</div><div class="art-spark spark-two">✦</div><div class="art-pill">A campus full of possibilities</div></div>
+      </div>
+      <div class="wrap event-section" id="event-list"><div class="section-heading"><div><span class="eyebrow muted">THE CAMPUS CALENDAR</span><h2>Find your next thing</h2><p>Meet up, make something, learn something new.</p></div><div class="event-count" id="event-count">Loading events…</div></div>
+        <div class="toolbar"><label class="search"><span aria-hidden="true">⌕</span><input id="search-input" type="search" placeholder="Search events, clubs, or topics…" aria-label="Search events"><kbd>⌘ K</kbd></label><div class="filters" id="filters"><button class="filter active" data-category="all">All events</button><button class="filter" data-category="today">Today</button><button class="filter" data-category="week">This week</button><button class="filter" data-category="free">Free</button></div></div>
+        <div id="events-grid" class="events-grid" aria-live="polite"></div><div id="empty-state" class="empty-state hidden"><span class="empty-icon">✳</span><h3>No events found</h3><p>Try a different search or filter.</p><button class="button button-outline" id="clear-filters">Clear filters</button></div>
+      </div>
+    </section>
+    <section id="registrations-page" class="page hidden"><div class="wrap registrations"><span class="eyebrow muted">YOUR CAMPUS PLANS</span><h1 class="page-title">My registrations</h1><p class="page-subtitle">All the good things you’ve got coming up.</p><div id="registrations-list" class="registration-list"></div></div></section>
+  </main>
+  <footer><div class="wrap footer-inner"><a class="brand" href="#explore"><span class="brand-mark">✳</span><span>Campus<span class="brand-accent">Connect</span></span></a><span>Made for the moments that bring us together.</span><a href="#explore">Back to top ↑</a></div></footer>
+
+  <dialog id="event-dialog" class="modal event-modal"><button class="modal-close" data-close aria-label="Close">×</button><div id="event-detail"></div></dialog>
+  <dialog id="auth-dialog" class="modal auth-modal"><button class="modal-close" data-close aria-label="Close">×</button><div class="auth-mark">✳</div><span class="eyebrow muted">WELCOME TO CAMPUSCONNECT</span><h2 id="auth-title">Good to see you.</h2><p id="auth-copy">Sign in to save your spot at the events you love.</p><form id="auth-form"><label>Email address<input id="auth-email" type="email" autocomplete="email" placeholder="you@campus.edu" required></label><label>Password<input id="auth-password" type="password" autocomplete="current-password" placeholder="At least 6 characters" required minlength="6"></label><p id="auth-error" class="form-error" role="alert"></p><button class="button button-primary full-width" id="auth-submit">Sign in</button></form><p class="auth-switch"><span id="auth-switch-text">New to CampusConnect?</span> <button id="auth-switch" class="text-button">Create an account</button></p></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

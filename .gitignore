@@ -1,0 +1,15 @@
+# Local configuration and secrets
+Backend/.env
+Backend/.env.*
+!.env.example
+
+# Python environment and generated files
+Backend/venv/
+__pycache__/
+*.py[cod]
+
+# Editor and operating system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
